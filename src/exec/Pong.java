@@ -272,7 +272,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    
    @Override
    public void addTuioCursor(TuioCursor t) {
-      WCursor w = new WCursor(SSM.ELEMENT_NONE, t);;
+      WCursor w = new WCursor(0, t);;
       
       int p1ZoneCounter = 0;
       int p2ZoneCounter = 0;
