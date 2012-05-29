@@ -94,8 +94,8 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                      s[i] = new DCTriple(paddle.segment[i]);
                   }
                   for (int i=1; i < (num_segment-1); i++) {
-                     s[i].x += (float)(Math.random()*14 - 7);   
-                     s[i].y += (float)(Math.random()*14 - 7);   
+                     s[i].x += (float)(Math.random()*wiggle - wiggle*0.5);   
+                     s[i].y += (float)(Math.random()*wiggle - wiggle*0.5);   
                   }
                   
                   gl2.glLineWidth(3.0f);
@@ -238,35 +238,38 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       blurTexture(gl2);
       initFragment();
       
-      // Dummy data
-      /*
-      player1 = new Paddle();
-      player1.p1 = new DCTriple(60, 500, 0);
-      player1.p2 = new DCTriple(150, 600, 0);
-      player1.calc();
-      WCursor p1cursor1 = new WCursor(0);
-      WCursor p1cursor2 = new WCursor(0);
-      p1cursor1.x = (float)player1.p1.x / (float)width; 
-      p1cursor1.y = (float)(height-player1.p1.y) / (float)height; 
-      p1cursor2.x = (float)player1.p2.x / (float)width; 
-      p1cursor2.y = (float)(height-player1.p2.y) / (float)height; 
-      pointsPlayer1.put(1L, p1cursor1);
-      pointsPlayer1.put(2L, p1cursor2);
       
-      player2 = new Paddle();
-      player2.p1 = new DCTriple(1500, 200, 0);
-      player2.p2 = new DCTriple(1600, 630, 0);
-      player2.calc();
-      WCursor p2cursor1 = new WCursor(0);
-      WCursor p2cursor2 = new WCursor(0);
-      p2cursor1.x = (float)player2.p1.x / (float)width; 
-      p2cursor1.y = (float)(height-player2.p1.y) / (float)height; 
-      p2cursor2.x = (float)player2.p2.x / (float)width; 
-      p2cursor2.y = (float)(height-player2.p2.y) / (float)height; 
-      pointsPlayer2.put(1L, p2cursor1);
-      pointsPlayer2.put(2L, p2cursor2);
-      */
-     
+      // Dummy data for debugging
+      if (debug) { 
+         player1 = new Paddle();
+         player1.p1 = new DCTriple(150, 10, 0);
+         player1.p2 = new DCTriple(150, 1200, 0);
+         player1.calc();
+         player1.connected = true;
+         WCursor p1cursor1 = new WCursor(0);
+         WCursor p1cursor2 = new WCursor(0);
+         p1cursor1.x = (float)player1.p1.x / (float)width; 
+         p1cursor1.y = (float)(height-player1.p1.y) / (float)height; 
+         p1cursor2.x = (float)player1.p2.x / (float)width; 
+         p1cursor2.y = (float)(height-player1.p2.y) / (float)height; 
+         pointsPlayer1.put(1L, p1cursor1);
+         pointsPlayer1.put(2L, p1cursor2);
+         
+         player2 = new Paddle();
+         player2.p1 = new DCTriple(1500, 10, 0);
+         player2.p2 = new DCTriple(1500, 1200, 0);
+         player2.calc();
+         player2.connected = true;
+         WCursor p2cursor1 = new WCursor(0);
+         WCursor p2cursor2 = new WCursor(0);
+         p2cursor1.x = (float)player2.p1.x / (float)width; 
+         p2cursor1.y = (float)(height-player2.p1.y) / (float)height; 
+         p2cursor2.x = (float)player2.p2.x / (float)width; 
+         p2cursor2.y = (float)(height-player2.p2.y) / (float)height; 
+         pointsPlayer2.put(1L, p2cursor1);
+         pointsPlayer2.put(2L, p2cursor2);
+      }
+      
    }
    
    
@@ -604,7 +607,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    public class Ball {
       public Ball() {
          position = new DCTriple();
-         direction = new DCTriple(1, 0, 0);
+         direction = new DCTriple(1, 0.5, 0);
          velocity = 3.0f;
       }
       public DCTriple position;
@@ -649,13 +652,23 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    public Ball ball = new Ball();
    public Fragment f[] = new Fragment[fragmentSize];   
    
-   // Environment
-   public static int playZoneWidth = 300;
-   public static int padding = 10;
-   public static int fragmentSize = 200;
-   public static int height, width;
-   public static int num_segment = 15;
-   
+   // Application state
    public static boolean doScreenCapture = false;
+   public static boolean debug = true;
+   
+   ////////////////////////////////////////////////////////////////////////////////
+   // Environment stuff
+   ////////////////////////////////////////////////////////////////////////////////
+   public static int playZoneWidth = 300;
+   public static int height, width;
+   public static int padding = 10;
+   
+   
+   public static int fragmentSize = 80;
+   
+   
+   // Paddle effects
    public static float connectSpeed = 16.0f;
+   public static int num_segment = 20;
+   public static int wiggle = 18;
 }
