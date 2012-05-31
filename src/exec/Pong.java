@@ -1,6 +1,8 @@
 package exec;
 
 
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.nio.ByteBuffer;
@@ -21,6 +23,7 @@ import com.jogamp.opengl.util.GLBuffers;
 import base.WCursor;
 import util.DCUtil;
 import util.GraphicUtil;
+import util.TextureFont;
 
 import TUIO.TuioClient;
 import TUIO.TuioCursor;
@@ -42,14 +45,12 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       
       tune.unDecorated = true;
       tune.isMaximized = true;
-      tune.sendToNextScreen = true;
+      //tune.sendToNextScreen = true;
       tune.run("TUNE TUIO", 800, 800);
    }
    
    
    public Pong() {
-      Thread t1 = new Thread(update);
-      t1.start();         
    }
    
    
@@ -75,14 +76,27 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
          pAdded = 0;
          pUpdated = 0;
          pRemoved = 0;
-         ball.position = new DCTriple( width/2, height/2, 0);
-         ball.direction = new DCTriple( 1, 0, 0);
+         //ball.position = new DCTriple( width/2, height/2, 0);
+         //ball.direction = new DCTriple( 1, 0, 0);
+         ball.direction = new DCTriple(Math.random()/2, Math.random()/2, 0);
+         ball.direction.normalize();
       }
       if (e.getKeyChar() == 'p') {
          doScreenCapture = true;
       }
    }
    
+   public void renderScore(GL2 gl2) {
+      gl2.glColor4f(1, 1, 1, 1);
+      player1_tf.anchorX = playZoneWidth;    
+      player1_tf.anchorY = height - 50;
+      player1_tf.render(gl2, false);
+      
+      player2_tf.anchorX = width - playZoneWidth - 50;    
+      player2_tf.anchorY = height - 50;
+      player2_tf.render(gl2, false);
+      gl2.glColor4f(1, 1, 1, 1);
+   }
    
    public void renderPaddle(GL2 gl2, Paddle paddle, DCColour c) {
       if (paddle != null) {
@@ -112,7 +126,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
             } else {
                DCTriple dir = (paddle.p2.sub(paddle.p1));
                dir.normalize();
-               DCTriple endPoint = paddle.p1.add(dir.mult((float)paddle.connectedCounter));
+               DCTriple endPoint = paddle.p1.add(dir.mult((float)paddle.connectedCounter * this.connectSpeed));
                gl2.glLineWidth(3.0f);
                gl2.glColor4fv(c.toArray(), 0);
                gl2.glBegin(GL2.GL_LINES);
@@ -178,6 +192,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       ////////////////////////////////////////////////////////////////////////////////
       // Draw the touch markers, each marker is drawn as concentric ellipses
       ////////////////////////////////////////////////////////////////////////////////
+      gl2.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE);
       for (WCursor wc : pointsPlayer1.values()) {
          float x = wc.x * width; 
          float y = wc.y * height; 
@@ -211,7 +226,15 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       //GraphicUtil.drawPie(gl2, ball.position.x, ball.position.y, 0, 10, 0, 360, 12); 
       
       gl2.glEnable(GL2.GL_TEXTURE_2D);
+      gl2.glBindTexture(GL2.GL_TEXTURE_2D, ftexture[0]);
+      gl2.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE);
       this.drawFragment(gl2, 0.8, 1, 0.2, 0.5);
+      
+      
+      ////////////////////////////////////////////////////////////////////////////////
+      // Draw the score board
+      ////////////////////////////////////////////////////////////////////////////////
+      this.renderScore(gl2);
       
       
       // Check if screen capture is requested
@@ -234,7 +257,9 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       gl2.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE);
       gl2.glDisable(GL2.GL_DEPTH_TEST);
       
-      ball.position = new DCTriple(400, 400, 0);
+      ball.position = new DCTriple(width/2, height/2, 0);
+      ball.direction = new DCTriple(Math.random()/2, Math.random()/2, 0);
+      ball.direction.normalize();
       blurTexture(gl2);
       initFragment();
       
@@ -270,6 +295,22 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
          pointsPlayer2.put(2L, p2cursor2);
       }
       
+      player1_tf = new TextureFont();
+      player2_tf = new TextureFont();
+      player1_tf.width = 50;
+      player1_tf.height = 50;
+      player2_tf.width = 50;
+      player2_tf.height = 50;
+      
+      player1_tf.clearMark();
+      player1_tf.addMark(player1_score+"", Color.ORANGE, new Font("Arial", Font.PLAIN, 22), 10, 10);
+      
+      player2_tf.clearMark();
+      player2_tf.addMark(player2_score+"", Color.ORANGE, new Font("Arial", Font.PLAIN, 22), 10, 10);
+      
+      
+      Thread t1 = new Thread(update);
+      t1.start();         
    }
    
    
@@ -326,7 +367,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       
       // 1) Remove touch point jitters
       //if ( t.getTuioTime().getTotalMilliseconds() - w.timestamp < 300)  {
-      if (dist(w.x, w.y, t.getX(), t.getY(), width, height) < 25) {
+      if (dist(w.x, w.y, t.getX(), t.getY(), width, height) < 40) {
          System.err.println("H1 ");
          return;   
       } 
@@ -428,6 +469,10 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                         float dot = ball.direction.dot(player1.normal);
                         ball.direction = (player1.normal.mult(-2*dot)).add(ball.direction);
                         ball.direction.normalize();
+                        ball.velocity += 0.5f; 
+                        ball.velocity = (float)Math.min(15.0, ball.velocity);
+                        pointsPlayer1.clear();
+                        player1 = null;
                      }
                   }
                }
@@ -438,6 +483,10 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                         float dot = ball.direction.dot(player2.normal);
                         ball.direction = (player2.normal.mult(-2*dot)).add(ball.direction);
                         ball.direction.normalize();
+                        ball.velocity += 0.5f; 
+                        ball.velocity = (float)Math.min(15.0, ball.velocity);
+                        pointsPlayer2.clear();
+                        player2 = null;
                      }
                   }
                }
@@ -447,10 +496,27 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                if (ball.position.y < padding) ball.direction.y *= -1;
                if (ball.position.y > (height-padding)) ball.direction.y *= -1;
                
+               // Check against left and right
+               if (ball.position.x < 0) {
+                  ball.direction = new DCTriple(-1, Math.random()-0.5, 0);
+                  ball.direction.normalize();
+                  ball.position = new DCTriple(width/2, height/2, 0);
+                  player2_score ++;
+                  player2_tf.clearMark();
+                  player2_tf.addMark(player2_score+"", Color.ORANGE, new Font("Arial", Font.PLAIN, 22), 10, 10);
+               }
+               if (ball.position.x > width) {
+                  ball.direction = new DCTriple(1, Math.random()-0.5, 0);
+                  ball.direction.normalize();
+                  ball.position = new DCTriple(width/2, height/2, 0);
+                  player1_score ++;
+                  player1_tf.clearMark();
+                  player1_tf.addMark(player1_score+"", Color.ORANGE, new Font("Arial", Font.PLAIN, 22), 10, 10);
+               }
                
                Thread.sleep(10);   
             }
-         } catch (Exception e) {}
+         } catch (Exception e) { e.printStackTrace();}
       }
    };
    
@@ -480,11 +546,18 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       }
       b.flip();
       
+      
+      gl2.glGenTextures(1, ftexture, 0);
+      gl2.glBindTexture(GL2.GL_TEXTURE_2D, ftexture[0]);
+      
       gl2.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_LINEAR);
       gl2.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_LINEAR);
       gl2.glTexImage2D(GL2.GL_TEXTURE_2D, 0, 3, w, h, 0, GL2.GL_RGBA, GL2.GL_UNSIGNED_BYTE, b);
+      gl2.glEnable(GL2.GL_TEXTURE_2D);
    }   
    
+   
+   public int[] ftexture = new int[1];
    
    
    ////////////////////////////////////////////////////////////////////////////////
@@ -600,7 +673,6 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       public int     connectedCounter = 0;
    }
    
-   
    ////////////////////////////////////////////////////////////////////////////////
    // Place holder for the ball centre
    ////////////////////////////////////////////////////////////////////////////////
@@ -612,7 +684,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       }
       public DCTriple position;
       public DCTriple direction;
-      public float velocity = 1.0f;
+      public float velocity = 3.0f;
    }
    
    
@@ -664,11 +736,21 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    public static int padding = 10;
    
    
-   public static int fragmentSize = 80;
+   public static int fragmentSize = 200;
    
    
    // Paddle effects
-   public static float connectSpeed = 16.0f;
+   public static float connectSpeed = 6.0f;
    public static int num_segment = 20;
    public static int wiggle = 18;
+   
+   
+   // Texture Effects
+   public TextureFont player1_tf;
+   public TextureFont player2_tf;
+   
+   public int player1_score = 0;
+   public int player2_score = 0;
+   
+  
 }
