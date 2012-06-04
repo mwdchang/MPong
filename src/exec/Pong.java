@@ -80,6 +80,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
          //ball.direction = new DCTriple( 1, 0, 0);
          ball.direction = new DCTriple(Math.random()/2, Math.random()/2, 0);
          ball.direction.normalize();
+        
       }
       if (e.getKeyChar() == 'p') {
          doScreenCapture = true;
@@ -96,6 +97,11 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       player2_tf.anchorY = height - 50;
       player2_tf.render(gl2, false);
       gl2.glColor4f(1, 1, 1, 1);
+   }
+   
+   public void renderPower(GL2 gl2) {
+      gl2.glColor4d(1, 1, 0, 0.3);
+      GraphicUtil.drawPie(gl2, testPower.position.x, testPower.position.y, 0, testPower.radius, 0, 360, 36);   
    }
    
    public void renderPaddle(GL2 gl2, Paddle paddle, DCColour c) {
@@ -211,6 +217,10 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
          }         
       }
       
+      ////////////////////////////////////////////////////////////////////////////////
+      // Render power ups
+      ////////////////////////////////////////////////////////////////////////////////
+      this.renderPower(gl2);
       
       ////////////////////////////////////////////////////////////////////////////////
       // Draw the paddles
@@ -231,6 +241,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       this.drawFragment(gl2, 0.8, 1, 0.2, 0.5);
       
       
+     
       ////////////////////////////////////////////////////////////////////////////////
       // Draw the score board
       ////////////////////////////////////////////////////////////////////////////////
@@ -308,6 +319,9 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       player2_tf.clearMark();
       player2_tf.addMark(player2_score+"", Color.ORANGE, new Font("Arial", Font.PLAIN, 22), 10, 10);
       
+      // Power declaration
+      testPower.position = new DCTriple(width/2, height/2, 0);
+      testPower.radius = 120;
       
       Thread t1 = new Thread(update);
       t1.start();         
@@ -471,8 +485,8 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                         ball.direction.normalize();
                         ball.velocity += 0.5f; 
                         ball.velocity = (float)Math.min(15.0, ball.velocity);
-                        pointsPlayer1.clear();
-                        player1 = null;
+                        //pointsPlayer1.clear();
+                        //player1 = null;
                      }
                   }
                }
@@ -485,8 +499,8 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                         ball.direction.normalize();
                         ball.velocity += 0.5f; 
                         ball.velocity = (float)Math.min(15.0, ball.velocity);
-                        pointsPlayer2.clear();
-                        player2 = null;
+                        //pointsPlayer2.clear();
+                        //player2 = null;
                      }
                   }
                }
@@ -512,6 +526,13 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                   player1_score ++;
                   player1_tf.clearMark();
                   player1_tf.addMark(player1_score+"", Color.ORANGE, new Font("Arial", Font.PLAIN, 22), 10, 10);
+               }
+               
+               
+               // Update power effects
+               if ( DCUtil.dist( (testPower.position.x - ball.position.x), (testPower.position.y - ball.position.y)) < testPower.radius) {
+                  ball.direction = new DCTriple( Math.random() - 0.5, Math.random() - 0.5, 0);   
+                  ball.direction.normalize();
                }
                
                Thread.sleep(10);   
@@ -710,6 +731,8 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    ////////////////////////////////////////////////////////////////////////////////
    public class Power {
       public PType ptype;
+      public DCTriple position;
+      public double radius;
    }
    
    
@@ -723,6 +746,9 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    public Paddle player2 = null;
    public Ball ball = new Ball();
    public Fragment f[] = new Fragment[fragmentSize];   
+   public Power testPower = new Power();
+   
+   
    
    // Application state
    public static boolean doScreenCapture = false;
