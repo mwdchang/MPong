@@ -109,14 +109,15 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    // Render powers
    ////////////////////////////////////////////////////////////////////////////////
    public void renderPower(GL2 gl2) {
-      gl2.glColor4d(1, 1, 0, 0.3);
       for (int i=0; i < powerList.size(); i++) {
          for (int p=0; p < 36; p++) {
+            gl2.glColor4d(0.3, 0.5, 0.5, 0.0025*(p-19)*(p-19)+0.18);
             GraphicUtil.drawPie(gl2, 
                   powerList.elementAt(i).position.x, 
                   powerList.elementAt(i).position.y, 
                   0, 
                   p%2==0? powerList.elementAt(i).radius : powerList.elementAt(i).radius*0.9, 
+                  //powerList.elementAt(i).radius + i*p, 
                   p*10, (p+1)*10, 10);   
          }
       }
@@ -344,8 +345,23 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       player2_tf.addMark(player2_score+"", Color.ORANGE, new Font("Arial", Font.PLAIN, 22), 10, 10);
       
       // Initial Power generation
-      for (int i=0; i < 2; i++) {
-         Power p = new Power( width/2-(int)(Math.random()*400-200), height/2 - (int)(Math.random()*400-200), (int)(Math.random()*150+10));
+      for (int i=0; i < 5; i++) {
+         boolean done = true; 
+         int r, x, y;
+         while(true) {
+            r = (int)(Math.random()*60) + 20;
+            x = (width/2) - (int)(Math.random()*1000-500);
+            y = (height/2) - (int)(Math.random()*800-400);
+            
+            done = true;
+            for (int idx=0; idx < powerList.size(); idx++) {
+               double d = DCUtil.dist(powerList.elementAt(idx).position.x-x, powerList.elementAt(idx).position.y-y);   
+               if (d < (r+powerList.elementAt(idx).radius)) done = false;
+               System.out.println("Debug " + x + " " + y + " " + r + " --> " + d + " " + (r+powerList.elementAt(idx).radius));
+            }
+            if (done == true) break;
+         }
+         Power p = new Power( x, y, r);
          powerList.add(p);
       }
       
@@ -503,6 +519,26 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                if (player1 != null && player1.connected == false) player1.connectedCounter++;
                if (player2 != null && player2.connected == false) player2.connectedCounter++;
                
+               if (player1 != null && player1.remove) {
+                  player1.removeDelay --;   
+                  if (player1.removeDelay <= 0) {
+                     player1.connected = false;
+                     player1.connectedCounter = 0;
+                     player1.remove = false;
+                     player1.removeDelay = player1.DELAY;
+                  }
+               }
+               if (player2 != null && player2.remove) {
+                  player2.removeDelay --;   
+                  if (player2.removeDelay <= 0) {
+                     player2.connected = false;
+                     player2.connectedCounter = 0;
+                     player2.remove = false;
+                     player2.removeDelay = player2.DELAY;
+                  }
+               }
+              
+               
                if (player1 != null && player1.connected) {
                   synchronized(player1) {
                      DCTriple hitP1 = DCUtil.intersectLine2D(start, end, player1.p1, player1.p2); 
@@ -511,7 +547,8 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                         ball.direction = (player1.normal.mult(-2*dot)).add(ball.direction);
                         ball.direction.normalize();
                         ball.velocity += 0.5f; 
-                        ball.velocity = (float)Math.min(15.0, ball.velocity);
+                        ball.velocity = (float)Math.min(12.0, ball.velocity);
+                        player1.remove = true;
                         //pointsPlayer1.clear();
                         //player1 = null;
                      }
@@ -525,7 +562,10 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                         ball.direction = (player2.normal.mult(-2*dot)).add(ball.direction);
                         ball.direction.normalize();
                         ball.velocity += 0.5f; 
-                        ball.velocity = (float)Math.min(15.0, ball.velocity);
+                        ball.velocity = (float)Math.min(12.0, ball.velocity);
+                        //player2.connected = false;
+                        //player2.connectedCounter = 0;
+                        player2.remove = true;
                         //pointsPlayer2.clear();
                         //player2 = null;
                      }
@@ -720,6 +760,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
          }
          
       }
+      public final short DELAY = 28;
       
       public DCTriple centre;
       public DCTriple normal;
@@ -729,6 +770,10 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       
       public boolean connected = false;
       public int     connectedCounter = 0;
+      
+      public boolean remove = false;
+      public short removeDelay = DELAY;
+      
    }
    
    ////////////////////////////////////////////////////////////////////////////////
@@ -799,7 +844,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    
    // Application state
    public static boolean doScreenCapture = false;
-   public static boolean debug = true;
+   public static boolean debug = false;
    
    ////////////////////////////////////////////////////////////////////////////////
    // Environment stuff
@@ -813,7 +858,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    
    
    // Paddle effects
-   public static float connectSpeed = 6.0f;
+   public static float connectSpeed = 1.4f;
    public static int num_segment = 20;
    public static int wiggle = 18;
    
