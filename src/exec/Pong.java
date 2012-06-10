@@ -21,6 +21,8 @@ import com.jogamp.opengl.util.GLBuffers;
 
 
 import base.WCursor;
+import sound.SoundManager;
+import sound.VLCManager;
 import util.DCUtil;
 import util.GraphicUtil;
 import util.TextureFont;
@@ -282,6 +284,12 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
 
    @Override 
    public void init(GLAutoDrawable a) {
+      
+      // Try to initialize sound
+      soundManager = (SoundManager)(new VLCManager());
+      soundManager.init();
+      
+      
       super.init(a);
       this.canvas.addKeyListener(this);
       
@@ -303,8 +311,8 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
       // Dummy data for debugging
       if (debug) { 
          player1 = new Paddle();
-         player1.p1 = new DCTriple(150, 10, 0);
-         player1.p2 = new DCTriple(150, 1200, 0);
+         player1.p1 = new DCTriple(150, 100, 0);
+         player1.p2 = new DCTriple(150, 1000, 0);
          player1.calc();
          player1.connected = true;
          WCursor p1cursor1 = new WCursor(0);
@@ -317,8 +325,8 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
          pointsPlayer1.put(2L, p1cursor2);
          
          player2 = new Paddle();
-         player2.p1 = new DCTriple(1500, 10, 0);
-         player2.p2 = new DCTriple(1500, 1200, 0);
+         player2.p1 = new DCTriple(1500, 100, 0);
+         player2.p2 = new DCTriple(1500, 1000, 0);
          player2.calc();
          player2.connected = true;
          WCursor p2cursor1 = new WCursor(0);
@@ -543,6 +551,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                   synchronized(player1) {
                      DCTriple hitP1 = DCUtil.intersectLine2D(start, end, player1.p1, player1.p2); 
                      if (hitP1 != null)  { 
+                        soundManager.play(CLONG);
                         float dot = ball.direction.dot(player1.normal);
                         ball.direction = (player1.normal.mult(-2*dot)).add(ball.direction);
                         ball.direction.normalize();
@@ -558,6 +567,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
                   synchronized(player2) {
                      DCTriple hitP2 = DCUtil.intersectLine2D(start, end, player2.p1, player2.p2); 
                      if (hitP2 != null) {
+                        soundManager.play(CLONG);
                         float dot = ball.direction.dot(player2.normal);
                         ball.direction = (player2.normal.mult(-2*dot)).add(ball.direction);
                         ball.direction.normalize();
@@ -831,6 +841,9 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    };
    
    
+   // Sound Manager
+   public SoundManager soundManager;
+   
    // Game object declarations
    public Paddle player1 = null; 
    public Paddle player2 = null;
@@ -844,7 +857,7 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    
    // Application state
    public static boolean doScreenCapture = false;
-   public static boolean debug = false;
+   public static boolean debug = true;
    
    ////////////////////////////////////////////////////////////////////////////////
    // Environment stuff
@@ -870,5 +883,8 @@ public class Pong extends JOGLBase implements TuioListener, KeyListener {
    public int player1_score = 0;
    public int player2_score = 0;
    
+   
+   // Path to sound files 
+   public static final String CLONG = "C:\\Users\\Daniel\\MPong\\clong-1.mp3";
   
 }
